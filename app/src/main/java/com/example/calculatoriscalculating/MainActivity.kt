@@ -12,9 +12,11 @@ import androidx.core.view.WindowInsetsCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var result: TextView
+    private lateinit var history: TextView
     private var currentInput = ""
     private var operator: Char? = null
     private var firstNumber: Int? = null
+    private var justCalculate: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         result = findViewById(R.id.display)
+        history = findViewById(R.id.header)
 
         // Numbers
         val buttonIds = listOf(
@@ -49,6 +52,8 @@ class MainActivity : AppCompatActivity() {
             result.text = calculate()
             firstNumber = calculate().toIntOrNull()
             currentInput = result.text as String
+        //  history.text = result.text as String
+            justCalculate = true
         }
 
         // reset
@@ -60,21 +65,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun onNumberClick(view: View) {
         val button = view as Button
-        currentInput += button.text
-        result.text = currentInput
+        if (justCalculate) {
+            currentInput = button.text.toString()
+            result.text = currentInput
+            history.text = currentInput
+            justCalculate = false
+        } else {
+            currentInput += button.text
+            result.text = currentInput
+            val update = history.text.toString() + button.text
+            history.text = update
+        }
     }
 
     private fun onOperatorClick(op: Char) {
-        if (currentInput.isNotEmpty()) {
+        if (currentInput.isNotEmpty() && operator == null) {
             firstNumber = currentInput.toInt()
             operator = op
+            if (justCalculate) {
+                val update = currentInput + op
+                history.text = update
+                justCalculate = false
+            } else {
+                val update = history.text.toString() + op
+                history.text = update
+            }
             currentInput = ""
         }
     }
 
     private fun calculate(): String {
         val secondNumber = currentInput.toIntOrNull()
-        return when {
+        val result = when {
             firstNumber == null || secondNumber == null || operator == null -> "error"
             operator == '+' -> (firstNumber!! + secondNumber).toString()
             operator == '-' -> (firstNumber!! - secondNumber).toString()
@@ -82,6 +104,8 @@ class MainActivity : AppCompatActivity() {
             operator == '/' -> if (secondNumber != 0) (firstNumber!! / secondNumber).toString() else "error"
             else -> "error"
         }
+        operator = null
+        return result
     }
 
     private fun reset() {
@@ -89,12 +113,14 @@ class MainActivity : AppCompatActivity() {
         result.text = "0"
         firstNumber = null
         operator = null
+        history.text = ""
     }
 
     private fun backspace() {
         if (currentInput.isNotEmpty()) {
-            currentInput = currentInput.dropLast(1)
-            result.text = currentInput.ifEmpty { "0" }
+            currentInput = currentInput.dropLast(1).ifEmpty { "" }
+            result.text = currentInput.ifEmpty { "" }
+            history.text = currentInput.ifEmpty { "" }
         }
     }
 }
